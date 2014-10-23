@@ -9,7 +9,7 @@ desktop_class <- R6Class(classname = "desktop",
                            initialize = function(interval){
                              self$interval <- initialise
                              return(invisible())
-                           }
+                           },
                            
                            #The actual, you know, running function
                            run = function(){
@@ -90,7 +90,6 @@ desktop_class <- R6Class(classname = "desktop",
                              #Return
                              return(query_results)
                            }
-                           
                            ),
                          portable = FALSE)
 
