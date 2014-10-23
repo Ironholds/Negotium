@@ -7,7 +7,7 @@ desktop_class <- R6Class(classname = "desktop",
                            
                            #What to do when it starts; write the provided interval to self$interval
                            initialize = function(interval){
-                             self$interval <- initialise
+                             self$interval <- interval
                              return(invisible())
                            },
                            
