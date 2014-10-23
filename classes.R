@@ -1,7 +1,7 @@
 desktop_class <- R6Class(classname = "desktop",
                          public = list(
                            data = NA, #actual data store
-                           save_file = "", #Where to put the results
+                           save_file = "turnip.tsv", #Where to put the results
                            log_file = "", #Where to put metadata
                            interval = NA, #How long to use between runs
                            
@@ -15,7 +15,7 @@ desktop_class <- R6Class(classname = "desktop",
                            run = function(){
                              
                              #Grab the results and hold
-                             results <- self$read_data()
+                             results <- private$read_data()
                              
                              #Retrieve results
                              
@@ -70,7 +70,7 @@ desktop_class <- R6Class(classname = "desktop",
                            read_data = function(){
                              
                              #Grab timestamps
-                             timestamps <- self$generate_query_boundaries()
+                             timestamps <- private$generate_query_boundaries()
                              
                              #Construct query and run it
                              query_results <- WMUtils::mysql_query(paste("SELECT uuid, timestamp
@@ -82,9 +82,9 @@ desktop_class <- R6Class(classname = "desktop",
                              #If there are no rows, stop
                              if(nrow(query_results) == 0){
                                
-                               self$log_writer(string = "No rows to retrieve",
-                                               start_stamp = timestamps[1],
-                                               end_stamp = timestamps[2])
+                               private$log_writer(string = "No rows to retrieve",
+                                                  start_stamp = timestamps[1],
+                                                  end_stamp = timestamps[2])
                                
                              }
                              #Return
