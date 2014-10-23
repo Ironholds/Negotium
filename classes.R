@@ -52,8 +52,8 @@ desktop_class <- R6Class(classname = "desktop",
                                 
                               }
                               
-                              #Either way, we should have start/end timestamps. Pass them through the ts_handler
-                              timestamps <- ts_handler(c(start_time,end_time))
+                              #Either way, we should have start/end timestamps. Pass them through format_query_timestamps
+                              timestamps <- private$format_query_timestamps(c(start_time,end_time))
                               
                               #Return
                               return(timestamps)
