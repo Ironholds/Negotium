@@ -14,9 +14,10 @@ desktop_class <- R6Class(classname = "desktop",
                            #The actual, you know, running function
                            run = function(){
                              
-                             #Grab the results and write to data
-                             self$data <- self$read_data()
+                             #Grab the results and hold
+                             results <- self$read_data()
                              
+                             #Retrieve results
                              
                              
                            }
@@ -29,24 +30,30 @@ desktop_class <- R6Class(classname = "desktop",
                              
                               #We need to pass this through to MediaWiki-like MySQL tables, so parsing is
                               #important
-                              timestamps <- gsub(x = timestamps, pattern = "(:| |-)", replacement = "")
+                              timestamps <- to_mw(timestamps)
                               return(timestamps)
                             },
                            
                             #Timestamp generator for actually working out the boundaries of the MySQL query
                             generate_query_boundaries = function(){
                              
-                              #Read in save_file to grab the max timestamp
-                              save_results <- read.delim(file = self$save_file, header = TRUE,
-                                                         as.is = TRUE)$end_timestamp
-                              save_results <- max(as.POSIXlt(save_results))
-                             
-                              #Increment to get a minimum value,
-                              #Then generate a maximum with the assistance of self$interval.
-                              #In both cases, pass through ts_handler
-                              min_stamp <- save_results + 1
-                              day(save_results) <- day(min_stamp) + self$interval
-                              timestamps <- ts_handler(c(min_stamp,save_results))
+                              #Read in save_file to grab the max timestamp - if it exists
+                              if(file.exists(self$save_file)){
+                                save_results <- read.delim(file = self$save_file, header = TRUE,
+                                                           as.is = TRUE)$end_timestamp
+                                start_time <- end_time <- (max(as.POSIXlt(save_results))+1)
+                                day(end_time) <- (day(end_time) + self$interval)
+                              
+                              } else {
+                                
+                                #If it doesn't exist...make it up!
+                                start_time <- end_time <- Sys.time()
+                                day(start_time) <- (day(start_time) - self$interval)
+                                
+                              }
+                              
+                              #Either way, we should have start/end timestamps. Pass them through the ts_handler
+                              timestamps <- ts_handler(c(start_time,end_time))
                               
                               #Return
                               return(timestamps)
@@ -66,13 +73,20 @@ desktop_class <- R6Class(classname = "desktop",
                              timestamps <- self$generate_query_boundaries()
                              
                              #Construct query and run it
-                             query_results <- mysql_query(paste("SELECT uuid, timestamp
-                                                                 FROM NavigationTiming_10076863
-                                                                 WHERE event_mobileMode IS NULL
-                                                                 AND timestamp BETWEEN",
-                                                                 timestamps[1],"AND",timestamps[2]))
+                             query_results <- WMUtils::mysql_query(paste("SELECT uuid, timestamp
+                                                                   FROM NavigationTiming_10076863
+                                                                   WHERE event_mobileMode IS NULL
+                                                                   AND timestamp BETWEEN",
+                                                                   timestamps[1],"AND",timestamps[2]))
                              
-                             
+                             #If there are no rows, stop
+                             if(nrow(query_results) == 0){
+                               
+                               self$log_writer(string = "No rows to retrieve",
+                                               start_stamp = timestamps[1],
+                                               end_stamp = timestamps[2])
+                               
+                             }
                              #Return
                              return(query_results)
                            }
