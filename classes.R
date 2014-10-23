@@ -3,7 +3,7 @@ desktop_class <- R6Class(classname = "desktop",
                            data = NA, #actual data store
                            save_file = "", #Where to put the results
                            log_file = "", #Where to put metadata
-                           interval = NA #How long to use between runs
+                           interval = NA, #How long to use between runs
                            
                            #What to do when it starts; write the provided interval to self$interval
                            initialize = function(interval){
@@ -30,7 +30,7 @@ desktop_class <- R6Class(classname = "desktop",
                              
                               #We need to pass this through to MediaWiki-like MySQL tables, so parsing is
                               #important
-                              timestamps <- to_mw(timestamps)
+                              timestamps <- WMUtils::to_mw(timestamps)
                               return(timestamps)
                             },
                            
@@ -42,13 +42,13 @@ desktop_class <- R6Class(classname = "desktop",
                                 save_results <- read.delim(file = self$save_file, header = TRUE,
                                                            as.is = TRUE)$end_timestamp
                                 start_time <- end_time <- (max(as.POSIXlt(save_results))+1)
-                                day(end_time) <- (day(end_time) + self$interval)
+                                lubridate::day(end_time) <- (lubridate::day(end_time) + self$interval)
                               
                               } else {
                                 
                                 #If it doesn't exist...make it up!
                                 start_time <- end_time <- Sys.time()
-                                day(start_time) <- (day(start_time) - self$interval)
+                                lubridate::day(start_time) <- (lubridate::day(start_time) - self$interval)
                                 
                               }
                               
