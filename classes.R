@@ -4,6 +4,7 @@ desktop_class <- R6Class(classname = "desktop",
                            save_file = "turnip.tsv", #Where to put the results
                            log_file = "", #Where to put metadata
                            interval = NA, #How long to use between runs
+                           timestamps = NA, #Timestamp element storage
                            
                            #What to do when it starts; write the provided interval to self$interval
                            initialize = function(interval){
@@ -17,22 +18,16 @@ desktop_class <- R6Class(classname = "desktop",
                              #Grab the results and hold
                              results <- private$read_data()
                              
-                             #Retrieve results
+                             #Convert timestamps
+                             results$timestamp <- as.character(WMUtils::log_strptime(results$timestamp))
                              
+                             #Stick in public$data, return TRUE
+                             self$data <- results
+                             return(TRUE)
                              
                            }
                          ),
                           private = list(
-                            
-                            #Timestamp formatter, for creating MySQL-acceptable timestamps from
-                            #Stored POSIX timestamps. This'll be used by the mobile_web class too.
-                            format_query_timestamps = function(timestamps){
-                             
-                              #We need to pass this through to MediaWiki-like MySQL tables, so parsing is
-                              #important
-                              timestamps <- WMUtils::to_mw(timestamps)
-                              return(timestamps)
-                            },
                            
                             #Timestamp generator for actually working out the boundaries of the MySQL query
                             generate_query_boundaries = function(){
@@ -52,45 +47,58 @@ desktop_class <- R6Class(classname = "desktop",
                                 
                               }
                               
-                              #Either way, we should have start/end timestamps. Pass them through format_query_timestamps
-                              timestamps <- private$format_query_timestamps(c(start_time,end_time))
-                              
-                              #Return
-                              return(timestamps)
+                              #Store and return
+                              self$timestamps <- c(start_time,end_time)
+                              return(TRUE)
                            },
                            
-                           #Format timestamps returned in read_data. This will be used by the mobile_web class too.
-                           format_result_timestamps = function(ts){
+                            #Data reader
+                            read_data = function(){
                              
-                             return(WMUtils::mw_strptime(ts))
-                             
-                           },
-                           
-                           #Data reader
-                           read_data = function(){
-                             
-                             #Grab timestamps
-                             timestamps <- private$generate_query_boundaries()
-                             
+                             #Generate timestamps. If that fails, stop
+                             if(!private$generate_query_boundaries()){
+                               
+                               private$log_writer(string = "timestamps could not be generated",
+                                                  start_stamp = self$timestamps[1],
+                                                  end_stamp = self$timestamps[2])
+                               stop("timestamps could not be generated")
+                               
+                             }
+                                                          
                              #Construct query and run it
-                             query_results <- WMUtils::mysql_query(paste("SELECT uuid, timestamp
-                                                                   FROM NavigationTiming_10076863
-                                                                   WHERE event_mobileMode IS NULL
-                                                                   AND timestamp BETWEEN",
-                                                                   timestamps[1],"AND",timestamps[2]))
+                             query_results <- private$query()
                              
                              #If there are no rows, stop
                              if(nrow(query_results) == 0){
                                
                                private$log_writer(string = "No rows to retrieve",
-                                                  start_stamp = timestamps[1],
-                                                  end_stamp = timestamps[2])
+                                                  start_stamp = self$timestamps[1],
+                                                  end_stamp = self$timestamps[2])
+                               
+                               stop("no rows to retrieve")
                                
                              }
+                             
                              #Return
                              return(query_results)
-                           }
-                           ),
+                           },
+                            
+                            #Query generator/runner
+                            query = function(){
+                              
+                              return(hive_query(
+                                query = paste("set hive.mapred.mode = nonstrict;
+                                               DROP TABLE ironholds.desktop_session_ips;
+                                               CREATE TABLE ironholds.desktop_session_ips(ip STRING);
+                                               INSERT OVERWRITE TABLE ironholds.desktop_session_ips
+                                               SELECT ip FROM (
+                                                SELECT DISTINCT(ip) AS ip",WMUtils::hive_range(self$timestamps[1],self$timestamps[2]),
+                                                "AND webrequest_source = 'text'
+                                                ORDER BY rand()) sub1
+                                               LIMIT 100000;")))
+                                                
+                            }
+                          ),
                          portable = FALSE)
 
 mobile_class <- R6Class(classname = "mobile_web",
