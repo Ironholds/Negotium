@@ -1,10 +1,12 @@
 desktop_class <- R6Class(classname = "desktop",
                          public = list(
                            data = NA, #actual data store
-                           save_file = "turnip.tsv", #Where to put the results
-                           log_file = "", #Where to put metadata
+                           class = "desktop", #Class
+                           results_file = "desktop_results.tsv", #Where to put the results
+                           log_file = "desktop_log.tsv", #Where to put metadata
                            interval = NA, #How long to use between runs
                            timestamps = NA, #Timestamp element storage
+                           results = NA, #The results
                            
                            #What to do when it starts; write the provided interval to self$interval
                            initialize = function(interval){
@@ -16,8 +18,8 @@ desktop_class <- R6Class(classname = "desktop",
                            run = function(){
                              
                              #Grab the results and hold
-                             results <- private$read_data()
-                             
+                             self$data <- private$read_data()
+                             results <- self$data
                              #Convert timestamps
                              results$timestamp <- as.numeric(WMUtils::log_strptime(results$dt))
                              
@@ -43,9 +45,9 @@ desktop_class <- R6Class(classname = "desktop",
                             generate_query_boundaries = function(){
                              
                               #Read in save_file to grab the max timestamp - if it exists
-                              if(file.exists(self$save_file)){
-                                save_results <- read.delim(file = self$save_file, header = TRUE,
-                                                           as.is = TRUE)$end_timestamp
+                              if(file.exists(self$results_file)){
+                                save_results <- read.delim(file = file.path(getwd(),"Results",self$results_file),
+                                                           header = TRUE, as.is = TRUE)$end_timestamp
                                 start_time <- end_time <- (max(as.POSIXlt(save_results))+1)
                                 lubridate::day(end_time) <- (lubridate::day(end_time) + self$interval)
                               
@@ -156,6 +158,11 @@ desktop_class <- R6Class(classname = "desktop",
                              
                              #Either way, return invisibly
                              return(invisible())
+                           },
+                           
+                           result_writer = function(){
+                             
+                             
                            }
                           ),
                          portable = FALSE)
