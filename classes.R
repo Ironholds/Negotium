@@ -19,7 +19,17 @@ desktop_class <- R6Class(classname = "desktop",
                              results <- private$read_data()
                              
                              #Convert timestamps
-                             results$timestamp <- as.character(WMUtils::log_strptime(results$timestamp))
+                             results$timestamp <- as.numeric(WMUtils::log_strptime(results$dt))
+                             
+                             #Handle IPs
+                             is_xff <- !results$x_forwarded_for == "-"
+                             results$ip[is_xff] <- results$xff[is_xff]
+                             
+                             #Generate hashes
+                             results$uuid <- private$hash_gen(results)
+                             
+                             #Strip columns we don't care about.
+                             results <- results[,c("dt", "ip", "x_forwarded_for", "user_agent", "accept_language") := NULL]
                              
                              #Stick in public$data, return TRUE
                              self$data <- results
@@ -28,7 +38,7 @@ desktop_class <- R6Class(classname = "desktop",
                            }
                          ),
                           private = list(
-                           
+                            
                             #Timestamp generator for actually working out the boundaries of the MySQL query
                             generate_query_boundaries = function(){
                              
@@ -50,17 +60,32 @@ desktop_class <- R6Class(classname = "desktop",
                               #Store and return
                               self$timestamps <- c(start_time,end_time)
                               return(TRUE)
-                           },
-                           
+                            },
+                            
+                            #Hash generator
+                            hash_gen = function(x){
+                              
+                              #Create output vector
+                              output <- character(nrow(x))
+                              
+                              #Loop
+                              for(i in seq_along(output)){
+                                
+                                output[i] <- digest(paste0(x$ip[i],x$user_agent[i],x$accept_language[i]), algo = "sha256")
+                                
+                              }
+                              
+                              #Done!
+                              return(output)
+                            },
+                            
                             #Data reader
                             read_data = function(){
                              
                              #Generate timestamps. If that fails, stop
                              if(!private$generate_query_boundaries()){
                                
-                               private$log_writer(string = "timestamps could not be generated",
-                                                  start_stamp = self$timestamps[1],
-                                                  end_stamp = self$timestamps[2])
+                               private$log_writer(string = "timestamps could not be generated", success = FALSE)
                                stop("timestamps could not be generated")
                                
                              }
@@ -71,10 +96,7 @@ desktop_class <- R6Class(classname = "desktop",
                              #If there are no rows, stop
                              if(nrow(query_results) == 0){
                                
-                               private$log_writer(string = "No rows to retrieve",
-                                                  start_stamp = self$timestamps[1],
-                                                  end_stamp = self$timestamps[2])
-                               
+                               private$log_writer(string = "No rows to retrieve", success = FALSE)
                                stop("no rows to retrieve")
                                
                              }
@@ -86,18 +108,55 @@ desktop_class <- R6Class(classname = "desktop",
                             #Query generator/runner
                             query = function(){
                               
+                              #Work out date range
+                              query_range <- WMUtils::hive_range(self$timestamps[1],self$timestamps[2])
+                              
+                              #Run query
                               return(hive_query(
                                 query = paste("set hive.mapred.mode = nonstrict;
                                                DROP TABLE ironholds.desktop_session_ips;
                                                CREATE TABLE ironholds.desktop_session_ips(ip STRING);
                                                INSERT OVERWRITE TABLE ironholds.desktop_session_ips
-                                               SELECT ip FROM (
-                                                SELECT DISTINCT(ip) AS ip",WMUtils::hive_range(self$timestamps[1],self$timestamps[2]),
+                                               SELECT * FROM (
+                                                SELECT DISTINCT(ip) AS ip FROM wmf_raw.webrequest",query_range,
                                                 "AND webrequest_source = 'text'
                                                 ORDER BY rand()) sub1
-                                               LIMIT 100000;")))
-                                                
-                            }
+                                               LIMIT 100000;
+                                               SELECT dt, alias1.ip, x_forwarded_for, user_agent, accept_language
+                                                FROM wmf_raw.webrequest alias1 INNER JOIN ironholds.desktop_session_ips alias2
+                                                ON alias1.ip = alias2.ip",
+                                                  query_range, "AND webrequest_source = 'text'
+                                                  AND content_type LIKE('text/html%');")))
+                            },
+                           
+                           log_writer = function(string, success){
+                             
+                             #Generate log line
+                             log_line <- c(Sys.time(),
+                                           success,
+                                           string,
+                                           self$timestamp[1],
+                                           self$timestamp[2])
+                             
+                             #Does the log file exist?
+                             if(file.exists(self$log_file)){
+                               
+                               #If so, append
+                               write.table(t(log_line), file = self$log_file,
+                                           append = TRUE, quote = TRUE, sep = "\t",
+                                           row.names = FALSE)
+                             } else {
+                               
+                               #If not, create and append.
+                               dir.create(file.path(getwd(),"logging"), showWarnings = FALSE)
+                               write.table(t(log_line), file = self$log_file,
+                                           append = FALSE, quote = TRUE, sep = "\t",
+                                           row.names = FALSE)
+                             }
+                             
+                             #Either way, return invisibly
+                             return(invisible())
+                           }
                           ),
                          portable = FALSE)
 
