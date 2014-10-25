@@ -1,21 +1,21 @@
 desktop_class <- R6Class(classname = "desktop",
-                         public = list(
-                           data = NA, #actual data store
-                           class = "desktop", #Class
-                           results_file = "desktop_results.tsv", #Where to put the results
-                           log_file = "desktop_log.tsv", #Where to put metadata
-                           interval = NA, #How long to use between runs
-                           timestamps = NA, #Timestamp element storage
-                           results = NA, #The results
+                          public = list(
+                            data = NA, #actual data store
+                            class = "desktop", #Class
+                            results_file = "desktop_results.tsv", #Where to put the results
+                            log_file = "desktop_log.tsv", #Where to put metadata
+                            interval = NA, #How long to use between runs
+                            timestamps = NA, #Timestamp element storage
+                            results = NA, #The results
                            
-                           #What to do when it starts; write the provided interval to self$interval
-                           initialize = function(interval){
+                            #What to do when it starts; write the provided interval to self$interval
+                            initialize = function(interval){
                              self$interval <- interval
                              return(invisible())
                            },
                            
-                           #The actual, you know, running function
-                           run = function(){
+                            #The actual, you know, running function
+                            run = function(){
                              
                              #Grab the results and hold
                              self$data <- private$read_data()
@@ -25,7 +25,7 @@ desktop_class <- R6Class(classname = "desktop",
                              
                              #Handle IPs
                              is_xff <- !results$x_forwarded_for == "-"
-                             results$ip[is_xff] <- results$xff[is_xff]
+                             results$ip[is_xff] <- results$x_forwarded_for[is_xff]
                              
                              #Generate hashes
                              results$uuid <- private$hash_gen(results)
@@ -131,7 +131,7 @@ desktop_class <- R6Class(classname = "desktop",
                                                   AND content_type LIKE('text/html%');")))
                             },
                            
-                           log_writer = function(string, success){
+                            log_writer = function(string, success){
                              
                              #Generate log line
                              log_line <- c(Sys.time(),
@@ -160,10 +160,9 @@ desktop_class <- R6Class(classname = "desktop",
                              return(invisible())
                            },
                            
-                           result_writer = function(){
-                             
-                             
-                           }
+                            result_writer = function(){
+                              
+                            }
                           ),
                          portable = FALSE)
 
