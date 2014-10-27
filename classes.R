@@ -2,8 +2,6 @@ desktop_class <- R6Class(classname = "desktop",
                           public = list(
                             data = NA, #actual data store
                             class = "desktop", #Class
-                            results_file = "desktop_results.tsv", #Where to put the results
-                            log_file = "desktop_log.tsv", #Where to put metadata
                             interval = NA, #How long to use between runs
                             timestamps = NA, #Timestamp element storage
                             results = NA, #The results
@@ -19,35 +17,31 @@ desktop_class <- R6Class(classname = "desktop",
                              
                              #Grab the results and hold
                              self$data <- private$read_data()
-                             results <- self$data
+                             
                              #Convert timestamps
-                             results$timestamp <- as.numeric(WMUtils::log_strptime(results$dt))
+                             self$data$timestamp <- as.numeric(WMUtils::log_strptime(self$dt))
                              
                              #Handle IPs
-                             is_xff <- !results$x_forwarded_for == "-"
-                             results$ip[is_xff] <- results$x_forwarded_for[is_xff]
+                             is_xff <- !self$data$x_forwarded_for == "-"
+                             self$data$ip[is_xff] <- self$data$x_forwarded_for[is_xff]
                              
                              #Generate hashes
-                             results$uuid <- private$hash_gen(results)
+                             self$data$uuid <- private$hash_gen(results)
                              
                              #Strip columns we don't care about.
-                             results <- results[,c("dt", "ip", "x_forwarded_for", "user_agent", "accept_language") := NULL]
-                             
-                             #Stick in public$data, return TRUE
-                             self$data <- results
-                             return(TRUE)
-                             
+                             self$data <- self$data[,c("dt", "ip", "x_forwarded_for", "user_agent", "accept_language") := NULL]
+                                                          
                            }
                          ),
                           private = list(
                             
                             #Timestamp generator for actually working out the boundaries of the MySQL query
                             generate_query_boundaries = function(){
-                             
+                              
                               #Read in save_file to grab the max timestamp - if it exists
-                              if(file.exists(self$results_file)){
-                                save_results <- read.delim(file = file.path(getwd(),"Results",self$results_file),
-                                                           header = TRUE, as.is = TRUE)$end_timestamp
+                              d_logfile <- file.path(getwd(),"Logging",paste(self$class,"log.tsv", sep = "_"))
+                              if(file.exists(d_logfile)){
+                                save_results <- read.delim(file = d_logfile, header = TRUE, as.is = TRUE)$end_timestamp
                                 start_time <- end_time <- (max(as.POSIXlt(save_results))+1)
                                 lubridate::day(end_time) <- (lubridate::day(end_time) + self$interval)
                               
@@ -141,7 +135,7 @@ desktop_class <- R6Class(classname = "desktop",
                                            self$timestamp[2])
                              
                              #Does the log file exist?
-                             if(file.exists(self$log_file)){
+                             if(file.exists(file.path(getwd(),"Logging",paste(self$class,"log.tsv", sep = "_")))){
                                
                                #If so, append
                                write.table(t(log_line), file = self$log_file,
