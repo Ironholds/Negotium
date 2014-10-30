@@ -10,5 +10,5 @@ options(scipen = 500, #Scientific notation is silly
         
 #Config variables
 DEFAULT_RUN_LENGTH = 7 #How many days to run over
-SAVE_DIR = "/a/public-datasets/readership" #Where to save the results
+SAVE_DIR = "/a/aggregate-datasets/readership" #Where to save the results
 LOG_DIR = file.path(getwd(),"Logging") #Where to save the run logs

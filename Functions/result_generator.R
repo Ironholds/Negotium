@@ -5,7 +5,8 @@ result_generator <- function(events){
     
     return(list(pages = 1,
                 sessions = 1,
-                session_length = 430))
+                session_length = 430)
+           )
     
   }
   
@@ -15,7 +16,8 @@ result_generator <- function(events){
   #And then generate, in sequence, and return...
   return(list(pages = session_pages(intertime_vals), #Number of pages in the session(s)
               sessions = session_count(intertime_vals), #Number of sessions in the series of events
-              session_length = session_length(intertime_vals), #Length of the session(s)
-              ))
+              session_length = session_length(intertime_vals) #Length of the session(s)
+              )
+        )
   
 }
