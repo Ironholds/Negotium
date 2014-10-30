@@ -6,10 +6,10 @@ negotium <- function(query, type){
   data <- data_retrieve(query)
     
   #Split
-  data <- keysplit(obj = data, key_col = "uuid")
+  split_data <- keysplit(obj = data, key_col = "uuid")
   
   #Generate session results
-  results <- unlist(parlapply(X = data, #Fork each subset to a different processor
+  results <- unlist(parlapply(X = split_data, #Fork each subset to a different processor
                        FUN = function(x){
                          
                          #Split again and lapply
@@ -20,11 +20,8 @@ negotium <- function(query, type){
                          
                        }), recursive = FALSE)
   
-  #Write
+  #Write and log
   result_writer(results, type)
-  
-  #Log
-  log_writer(type)
   
   #Return
   return(TRUE)
