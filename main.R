@@ -1,17 +1,39 @@
 #Load dependencies
 source("config.R")
-source("classes.R")
 
 #Run
 main <- function(){
   
-  #Construct directories
-  dir.create(LOG_DIR, showWarnings = FALSE)
-  dir.create(SAVE_DIR, showWarnings = FALSE)
+  #Construct query
+  query <- query_constructor()
   
-  #Desktop
+  #Grab data
+  data <- hive_query(query = query)
   
-  #Apps
+  #Convert timestamps
+  data$timestamp <- as.numeric(log_strptime(data$timestamp))
   
-  #Mobile
+  #Split
+  split_data <- keysplit(obj = data, key_col = "uuid")
+  
+  #Generate session results
+  results <- unlist(parlapply(X = split_data, #Fork each subset to a different processor
+                              FUN = function(x){
+                                
+                                #Split again and lapply
+                                interim_results <- lapply(X = keysplit(obj = x, key_col = "uuid", pieces = length(unique(x$uuid))),
+                                                          FUN = result_generator)
+                                
+                                return(interim_results)
+                                
+                              }), recursive = FALSE)
+  
+  #Write and log
+  complete <- result_writer(results, type)
+  
+  #Done
+  return(TRUE)
 }
+
+main()
+q()

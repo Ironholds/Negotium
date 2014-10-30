@@ -20,9 +20,18 @@ result_writer <- function(x, type){
   #Write out
   file <- file.path(SAVE_DIR, paste0(type,"_session_analysis_results.tsv"))
   if(file.exists(file)){
-    write.table(rows, file, append = TRUE, row.names = FALSE, col.names = FALSE, quote = FALSE, sep = "\t")
-  } else {
-    write.table(rows, file, append = FALSE, row.names = FALSE, col.names = TRUE, quote = FALSE, sep = "\t")
+    data <- rbind(read.delim(file, header = TRUE, as.is = TRUE, quote = ""),rows)
   }
-
+  write.table(data, file, append = FALSE, row.names = FALSE, col.names = TRUE, quote = FALSE, sep = "\t")
+  
+  #Log
+  log_line <- data.frame(runtime = dt, type = type, stringsAsFactors = FALSE)
+  if(file.exists(LOG_FILE)){
+    data <- rbind(read.delim(LOG_FILE),log_line)
+  }
+  write.table(data, LOG_FILE, append = FALSE, row.names = FALSE, col.names = TRUE, quote = FALSE, sep = "\t")
+  
+  #Return
+  return(TRUE)
+  
 }
