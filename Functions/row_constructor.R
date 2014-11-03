@@ -5,6 +5,7 @@ row_constructor <- function(x, name, dt){
   #Construct a row of...
   row <- c(dt,
           name,
+          exp(sum(log(x[x > 0]), na.rm = TRUE) / length(x)),
           mean(x),
           min(x),
           max(x),

@@ -25,21 +25,13 @@ main <- function(){
   
   #Generate session results
   results <- unlist(parlapply(X = split_data, #Fork each subset to a different processor
-                              FUN = function(x){
-                                
-                                #Split again and lapply
-                                interim_results <- lapply(X = keysplit(obj = x, key_col = "uuid", pieces = length(unique(x$uuid))),
-                                                          FUN = )
-                                
-                                return(interim_results)
-                                
-                              }), recursive = FALSE)
+                              FUN = session_analyser, inter_avg = avg_intertime), recursive = FALSE)
   
-  #Write and log
-  complete <- result_writer(results, type)
+  #Write
+  result_writer(results)
   
   #Done
-  return(TRUE)
+  return(invisible())
 }
 
 main()
