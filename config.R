@@ -1,7 +1,6 @@
 #Libraries
 library(WMUtils) #Internal utilities. For great justice and C++!
 library(lubridate) #Timestamp handling.
-library(digest) #Hashing
 
 #Options
 options(scipen = 500, #Scientific notation is silly

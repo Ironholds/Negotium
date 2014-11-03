@@ -1,6 +1,6 @@
 #Load dependencies
 source("config.R")
-
+ignore <- lapply(list.files(file.path(getwd(),"Functions"), full.names = TRUE), source)
 #Run
 main <- function(){
   
@@ -12,7 +12,13 @@ main <- function(){
   
   #Convert timestamps
   data$timestamp <- as.numeric(log_strptime(data$timestamp))
-  data <- data[!is.na(data),]
+  data <- data[!is.na(data$timestamp),]
+  
+  #Generate accurate average intertime
+  intertime_list <- unlist(lapply(keysplit(obj = data, key_col = "uuid", pieces = length(unique(data$uuid))),
+                                  function(x){return(intertimes(x$timestamp))}))
+  intertime_list <- intertime_list[!is.na(intertime_list)]
+  avg_intertime <- exp(sum(log(intertime_list[intertime_list > 0]), na.rm = TRUE) / length(intertime_list))
   
   #Split
   split_data <- keysplit(obj = data, key_col = "uuid")
@@ -23,29 +29,7 @@ main <- function(){
                                 
                                 #Split again and lapply
                                 interim_results <- lapply(X = keysplit(obj = x, key_col = "uuid", pieces = length(unique(x$uuid))),
-                                                          FUN = function(events){
-                                                            
-                                                            #If there's only one event, this is easy - just return with the default
-                                                            if(nrow(events) == 1){
-                                                              
-                                                              return(list(pages = 1,
-                                                                          sessions = 1,
-                                                                          session_length = 430)
-                                                              )
-                                                              
-                                                            }
-                                                            
-                                                            #Otherwise, compute intertimes
-                                                            intertime_vals <- intertimes(timestamps = events$timestamp)
-                                                            
-                                                            #And then generate, in sequence, and return...
-                                                            return(list(pages = session_pages(intertime_vals), #Number of pages in the session(s)
-                                                                        sessions = session_count(intertime_vals), #Number of sessions in the series of events
-                                                                        session_length = session_length(intertime_vals) #Length of the session(s)
-                                                            )
-                                                            )
-                                                            
-                                                          })
+                                                          FUN = )
                                 
                                 return(interim_results)
                                 

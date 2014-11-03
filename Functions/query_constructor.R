@@ -13,9 +13,9 @@ query_constructor <- function(){
   
   #Construct query
   query <- paste("set hive.mapred.mode = nonstrict;
-  DROP TABLE ironholds.uuids;
-  CREATE TABLE ironholds.uuids(uuid STRING);
-  INSERT OVERWRITE TABLE ironholds.uuids
+  DROP TABLE ironholds.negotium_uuids;
+  CREATE TABLE ironholds.negotium_uuids(uuid STRING);
+  INSERT OVERWRITE TABLE ironholds.negotium_uuids
   SELECT uuid FROM (
     SELECT DISTINCT(parse_url(concat('http://bla.org/woo/', uri_query), 'QUERY', 'appInstallID')) AS uuid 
     FROM wmf_raw.webrequest",hive_range(last_run,cur_time),
@@ -28,13 +28,10 @@ query_constructor <- function(){
     ORDER BY rand()) sub1
   LIMIT 100000;
   SELECT alias1.dt AS timestamp,
-  parse_url(concat('http://bla.org/woo/', alias1.uri_query), 'QUERY', 'appInstallID') AS uuid,
-  FROM wmf_raw.webrequest alias1 INNER JOIN ironholds.uuids alias2
+  parse_url(concat('http://bla.org/woo/', alias1.uri_query), 'QUERY', 'appInstallID') AS uuid
+  FROM wmf_raw.webrequest alias1 INNER JOIN ironholds.negotium_uuids alias2
   ON parse_url(concat('http://bla.org/woo/', alias1.uri_query), 'QUERY', 'appInstallID') = alias2.uuid",
     hive_range(last_run, cur_time),"
-  WHERE year = 2014
-  AND month = 10
-  AND day BETWEEN 01 AND 30
   AND uri_query LIKE('%sections=0%')
   AND uri_query LIKE('%action=mobileview%')
   AND uri_query LIKE('%appInstallID%')
