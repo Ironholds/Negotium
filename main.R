@@ -1,14 +1,18 @@
 #Load dependencies
 source("config.R")
 ignore <- lapply(list.files(file.path(getwd(),"Functions"), full.names = TRUE), source)
-#Run
+
 main <- function(){
   
-  #Construct query
-  query <- query_constructor()
+  #Do we launch? Grab the current day, check if it's 31 days after the previous run, stopifnot.
+  current_runtime <- Sys.Date()
+  if(file.exists(file.path(save_dir,"session_length.tsv"))){
+    previous_runtime <- max(as.Date(read.delim(file.path(save_dir,"session_length.tsv"), as.is = TRUE, header = TRUE)$runtime))
+    stopifnot((previous_runtime + 31) == current_runtime)
+  }
   
   #Grab data
-  data <- hive_query(query = query)
+  data <- dep_hive_query("query.hql")
   
   #Convert timestamps
   data$timestamp <- as.numeric(log_strptime(data$timestamp))
@@ -33,6 +37,5 @@ main <- function(){
   #Done
   return(invisible())
 }
-
 main()
 q()
