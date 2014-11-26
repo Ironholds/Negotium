@@ -28,11 +28,17 @@ main <- function(){
   split_data <- keysplit(obj = data, key_col = "uuid")
   
   #Generate session results
-  results <- unlist(parlapply(X = split_data, #Fork each subset to a different processor
-                              FUN = session_analyser, inter_avg = avg_intertime), recursive = FALSE)
+  results <- unlist(mclapply(X = split_data, #Fork each subset to a different processor
+                              FUN = session_analyser, inter_avg = avg_intertime), recursive = FALSE,
+                    mc.allow.recursive = FALSE, mc.preschedule = FALSE, mc.cores = round(detectCores()/4))
   
   #Write
-  result_writer(results)
+  output_constructor(x = unlist(lapply(results, function(x){return(x$sessions)})), name = "sessions per user",
+                     file = "sessions_per_user.tsv", date = date)
+  output_constructor(x = unlist(lapply(results, function(x){return(x$pages)})), name = "pages per session",
+                     file = "pages_per_session.tsv", date = date)
+  output_constructor(x = unlist(lapply(results, function(x){return(x$session_length)})), name = "session length",
+                     file = "session_length.tsv", date = date)
   
   #Done
   return(invisible())

@@ -17,9 +17,10 @@ output_constructor <- function(x, name, file, date){
   names(rows) <- c("runtime","variable","geometric mean","mean","minimum","maximum","50% quantile","99% quantile")
   
   #Write file
-  if(file.exists(file)){
+  if(file.exists(file.path(save_dir,file))){
     row <- rbind(read.delim(file, as.is = TRUE, header = TRUE),row)
   }
-  write.table(row, file, append = FALSE, row.names = FALSE, col.names = TRUE, quote = FALSE, sep = "\t")
+  write.table(row, file.path(save_dir,file), append = FALSE, row.names = FALSE,
+              col.names = TRUE, quote = FALSE, sep = "\t")
   return(TRUE)
 }

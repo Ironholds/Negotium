@@ -27,7 +27,7 @@ session_analyser <- function(split_list, inter_avg = 430){
                               
                             }, inter_avg = inter_avg)
   
+  
   #Return
   return(interim_results)
-  
 }
