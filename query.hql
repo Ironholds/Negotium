@@ -17,9 +17,9 @@ SELECT alias1.dt AS timestamp,
 parse_url(concat('http://bla.org/woo/', alias1.uri_query), 'QUERY', 'appInstallID') AS uuid
 FROM wmf_raw.webrequest alias1 INNER JOIN ironholds.negotium_uuids alias2
 ON parse_url(concat('http://bla.org/woo/', alias1.uri_query), 'QUERY', 'appInstallID') = alias2.uuid
-AND uri_query LIKE('%sections=0%')
-AND uri_query LIKE('%action=mobileview%')
-AND uri_query LIKE('%appInstallID%')
-AND webrequest_source IN ('mobile','text')
-AND user_agent LIKE('WikipediaApp%')
-AND http_status = '200';
+AND alias1.uri_query LIKE('%sections=0%')
+AND alias1.uri_query LIKE('%action=mobileview%')
+AND alias1.uri_query LIKE('%appInstallID%')
+AND alias1.webrequest_source IN ('mobile','text')
+AND alias1.user_agent LIKE('WikipediaApp%')
+AND alias1.http_status = '200';
