@@ -3,7 +3,7 @@ output_constructor <- function(x, name, file, date){
   row_quants <- quantile(x, seq(0,1,0.01))
   
   #Construct a row
-  row <- c(date,
+  row <- c(as.character(date),
           name,
           exp(sum(log(x[x > 0]), na.rm = TRUE) / length(x)),
           mean(x),
@@ -14,7 +14,7 @@ output_constructor <- function(x, name, file, date){
   
   #Turn into a data.frame
   row <- as.data.frame(t(as.data.frame(row)), stringsAsFactors = FALSE)
-  names(rows) <- c("runtime","variable","geometric mean","mean","minimum","maximum","50% quantile","99% quantile")
+  names(row) <- c("runtime","variable","geometric mean","mean","minimum","maximum","50% quantile","99% quantile")
   
   #Write file
   if(file.exists(file.path(save_dir,file))){
