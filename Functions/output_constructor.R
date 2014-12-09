@@ -8,13 +8,16 @@ output_constructor <- function(x, name, file, date){
           exp(sum(log(x[x > 0]), na.rm = TRUE) / length(x)),
           mean(x),
           min(x),
-          max(x),
+          unname(row_quants[names(row_quants) == "25%"]),
           unname(row_quants[names(row_quants) == "50%"]),
-          unname(row_quants[names(row_quants) == "99%"]))
+          unname(row_quants[names(row_quants) == "75%"]),
+          unname(row_quants[names(row_quants) == "99%"]),
+          max(x))
   
   #Turn into a data.frame
   row <- as.data.frame(t(as.data.frame(row)), stringsAsFactors = FALSE)
-  names(row) <- c("runtime","variable","geometric mean","mean","minimum","maximum","50% quantile","99% quantile")
+  names(row) <- c("runtime","variable","geometric mean","mean","minimum","25% quantile","50% quantile",
+                  "75% quantile","99% quantile","maximum")
   
   #Write file
   if(file.exists(file.path(save_dir,file))){

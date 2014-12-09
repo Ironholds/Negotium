@@ -1,5 +1,6 @@
 #Libraries
 library(WMUtils) #Internal utilities. For great justice and C++!
+library(reconstructr)
 library(lubridate) #Timestamp handling.
 library(parallel) #Parallelisation
 

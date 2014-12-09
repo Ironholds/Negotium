@@ -12,33 +12,30 @@ main <- function(){
   }
   
   #Grab data
-  data <- dep_hive_query("query.hql")
+  data <- dep_hive_query("query.hql", skip = 2)
   
   #Convert timestamps
   data$timestamp <- as.numeric(log_strptime(data$timestamp))
   data <- data[!is.na(data$timestamp),]
   
-  #Generate accurate average intertime
-  intertime_list <- unlist(lapply(keysplit(obj = data, key_col = "uuid", pieces = length(unique(data$uuid))),
-                                  function(x){return(intertimes(x$timestamp))}))
-  intertime_list <- intertime_list[!is.na(intertime_list)]
-  avg_intertime <- round(exp(sum(log(intertime_list[intertime_list > 0]), na.rm = TRUE) / length(intertime_list)))
+  #Sessionise
+  data <- lapply(split(data$timestamp,data$uuid),function(x){return(sessionise(list(x),1800))})
   
-  #Split
-  split_data <- keysplit(obj = data, key_col = "uuid")
+  #Sessions by user
+  sess_by_user <- unlist(lapply(data,length))
   
-  #Generate session results
-  results <- unlist(x = mclapply(X = split_data, FUN = session_analyser,
-                                 mc.allow.recursive = FALSE, mc.preschedule = FALSE,
-                                 mc.cores = round(detectCores()/4), inter_avg = avg_intertime),
-                    recursive = FALSE)
+  #Pages per session, session length
+  data <- unlist(data, recursive = FALSE)
+  sess_length <- session_length(data, preserve_single_events = FALSE, padding_value = 0)
+  sess_length <- sess_length[sess_length > -1]
+  sess_pages <- session_events(data)
   
   #Write
-  output_constructor(x = unlist(lapply(results, function(x){return(x$sessions)})), name = "sessions per user",
+  output_constructor(x = sess_by_user, name = "sessions per user",
                      file = "sessions_per_user.tsv", date = current_runtime)
-  output_constructor(x = unlist(lapply(results, function(x){return(x$pages)})), name = "pages per session",
+  output_constructor(x = sess_length, name = "pages per session",
                      file = "pages_per_session.tsv", date = current_runtime)
-  output_constructor(x = unlist(lapply(results, function(x){return(x$session_length)})), name = "session length",
+  output_constructor(x = sess_pages, name = "session length",
                      file = "session_length.tsv", date = current_runtime)
   
   #Done
