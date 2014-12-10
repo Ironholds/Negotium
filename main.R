@@ -19,23 +19,23 @@ main <- function(){
   data <- data[!is.na(data$timestamp),]
   
   #Sessionise
-  data <- lapply(split(data$timestamp,data$uuid),function(x){return(sessionise(list(x),1800))})
-  
+  split_data <- split(data$timestamp,data$uuid)
+  split_data <- lapply(split_data,function(x){return(sessionise(list(x),1800))})
   #Sessions by user
-  sess_by_user <- unlist(lapply(data,length))
+  sess_by_user <- unlist(lapply(split_data,length))
   
   #Pages per session, session length
-  data <- unlist(data, recursive = FALSE)
-  sess_length <- session_length(data, preserve_single_events = FALSE, padding_value = 0)
+  split_data <- unlist(split_data, recursive = FALSE)
+  sess_length <- session_length(split_data, preserve_single_events = FALSE, padding_value = 0)
   sess_length <- sess_length[sess_length > -1]
-  sess_pages <- session_events(data)
+  sess_pages <- session_events(split_data)
   
   #Write
   output_constructor(x = sess_by_user, name = "sessions per user",
                      file = "sessions_per_user.tsv", date = current_runtime)
-  output_constructor(x = sess_length, name = "pages per session",
+  output_constructor(x = sess_pages, name = "pages per session",
                      file = "pages_per_session.tsv", date = current_runtime)
-  output_constructor(x = sess_pages, name = "session length",
+  output_constructor(x = sess_length, name = "session length",
                      file = "session_length.tsv", date = current_runtime)
   
   #Done
